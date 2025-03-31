@@ -17,18 +17,18 @@ function App() {
                                 <strong>{key}:</strong> {value}
                             </div>
                         ))}
-                        {item.children.has_nemesis?.records?.map((item, index) => (
+                        {item.children.has_nemesis?.records?.map((nemesisRecord, index) => (
                             <div key={index} style={{ marginBottom: "20px" }}>
-                                {Object.entries(item.data).map(([key, value]) => (
+                                {Object.entries(nemesisRecord.data).map(([key, value]) => (
                                     <div key={key}>
                                         <strong>{key}:</strong> {value}
                                     </div>
                                 ))}
                             </div>
                         ))}
-                        {item.children.has_nemesis?.records[0]?.children?.has_secrete?.records?.map((item, index) => (
+                        {item.children.has_nemesis?.records[0]?.children?.has_secrete?.records?.map((secreteRecords, index) => (
                             <div key={index} style={{ marginBottom: "20px" }}>
-                                {Object.entries(item.data).map(([key, value]) => (
+                                {Object.entries(secreteRecords.data).map(([key, value]) => (
                                     <div key={key}>
                                         <strong>{key}:</strong> {value}
                                     </div>
