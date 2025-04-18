@@ -1,53 +1,75 @@
-import React from "react";
+import React, { useState } from "react";
 import data from "./example-data.json";
 
 interface DataItem {
     [key: string]: string;
 }
 
+interface ChildrenRecords {
+    records: HierarchyItem[];
+}
+
 interface HierarchyItem {
     data: DataItem;
     children?: {
-        [groupName: string]: { records: HierarchyItem[] };
+        [groupName: string]: ChildrenRecords;
     };
 }
 
 export default function App() {
     const items = data as HierarchyItem[];
+
     const rows: any[] = [];
 
-    function renderItem(item: HierarchyItem, keyPrefix: string) {
-        const columns = Object.keys(item.data);
-        console.log(columns, "cool");
+    const [expanded, setExpanded] = useState<{ [id: string]: boolean }>({});
 
+    function toggleItem(id: string) {
+        setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+    }
+
+    function renderItem(item: HierarchyItem, keyPrefix: string, renderHeader = true) {
+        const columns = Object.keys(item.data);
+
+        let hasChildren = false;
+        if (item.children) {
+            for (const groupKey in item.children) {
+                if (item.children[groupKey].records.length > 0) {
+                    hasChildren = true;
+                    break;
+                }
+            }
+        }
+
+        // green header
         const headerCells: any[] = [];
-        for (let i = 0; i < columns.length; i++) {
+        if (renderHeader) {
+            for (let i = 0; i < columns.length; i++) {
+                headerCells.push(
+                    <th
+                        key={columns[i]}
+                        style={{
+                            textAlign: "left",
+                            padding: "8px",
+                            borderBottom: "1px solid #333",
+                        }}
+                    >
+                        {columns[i]}
+                    </th>
+                );
+            }
             headerCells.push(
                 <th
-                    key={columns[i]}
+                    key="delete"
                     style={{
                         textAlign: "left",
                         padding: "8px",
                         borderBottom: "1px solid #333",
                     }}
                 >
-                    {columns[i]}
+                    delete
                 </th>
             );
         }
-        headerCells.push(
-            <th
-                key="delete"
-                style={{
-                    textAlign: "left",
-                    padding: "8px",
-                    borderBottom: "1px solid #333",
-                }}
-            >
-                Delete
-            </th>
-        );
-        console.log(headerCells, "headerCells2");
 
         rows.push(
             <tr key={`header-${keyPrefix}`} style={{ backgroundColor: "#2ebc71", color: "#000" }}>
@@ -55,14 +77,43 @@ export default function App() {
             </tr>
         );
 
-        const dataCells: any[] = [];
-        for (let i = 0; i < columns.length; i++) {
-            dataCells.push(
-                <td key={columns[i]} style={{ padding: "8px" }}>
-                    {item.data[columns[i]] || ""}
-                </td>
-            );
+        let arrow = "";
+        if (hasChildren) {
+            arrow = expanded[item.data["ID"]] ? "▼" : "▶";
         }
+        // data header - black
+        const dataCells: any[] = [];
+
+        for (let i = 0; i < columns.length; i++) {
+            const colKey = columns[i];
+            if (i === 0 && hasChildren) {
+                dataCells.push(
+                    <td key={colKey} style={{ padding: "8px" }}>
+                        <button
+                            onClick={() => toggleItem(item.data["ID"])}
+                            style={{
+                                backgroundColor: "transparent",
+                                border: "none",
+                                color: "#fff",
+                                cursor: "pointer",
+                                fontSize: "16px",
+                                marginRight: "5px",
+                            }}
+                        >
+                            {arrow}
+                        </button>
+                        {item.data[colKey] || ""}
+                    </td>
+                );
+            } else {
+                dataCells.push(
+                    <td key={colKey} style={{ padding: "8px" }}>
+                        {item.data[colKey] || ""}
+                    </td>
+                );
+            }
+        }
+
         dataCells.push(
             <td key="delete-button" style={{ padding: "8px", textAlign: "center" }}>
                 <button
@@ -79,6 +130,7 @@ export default function App() {
                 </button>
             </td>
         );
+
         rows.push(
             <tr
                 key={`data-${keyPrefix}`}
@@ -92,13 +144,11 @@ export default function App() {
             </tr>
         );
 
-        if (item.children) {
+        if (hasChildren && expanded[item.data["ID"]]) {
             for (const groupKey in item.children) {
                 const group = item.children[groupKey];
-                if (group.records && group.records.length > 0) {
-                    for (let i = 0; i < group.records.length; i++) {
-                        renderItem(group.records[i], `${keyPrefix}-${groupKey}-${i}`);
-                    }
+                for (let i = 0; i < group.records.length; i++) {
+                    renderItem(group.records[i], `${keyPrefix}-${groupKey}-${i}`);
                 }
             }
         }
