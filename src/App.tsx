@@ -17,7 +17,9 @@ export default function App() {
     const [expanded, setExpanded] = useState<{ [id: string]: boolean }>({});
 
     const columns = Object.keys(items[0].data);
+    console.log(columns, "columns");
 
+    // render main green header
     const globalHeader = (
         <thead>
             <tr style={{ backgroundColor: "#2ebc71", color: "#000" }}>
@@ -35,13 +37,12 @@ export default function App() {
         setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
     }
 
-    function renderItem(item: HierarchyItem, key: string, includeSectionHeader: boolean) {
+    function renderItem(item: HierarchyItem, key: string, showGroupHeader: boolean) {
         const rows = [];
         const cols = Object.keys(item.data);
-
         const hasChildren = item.children && Object.values(item.children).some((g) => g.records.length > 0);
-
-        if (includeSectionHeader) {
+        // sub Header
+        if (showGroupHeader) {
             rows.push(
                 <tr key={`sec-head-${key}`} style={{ backgroundColor: "#2ebc71", color: "#000" }}>
                     {cols.map((col) => (
@@ -103,8 +104,8 @@ export default function App() {
 
         if (hasChildren && expanded[item.data.ID]) {
             Object.entries(item.children!).forEach(([groupKey, group]) => {
-                group.records.forEach((child, idx) => {
-                    rows.push(...renderItem(child, `${key}-${groupKey}-${idx}`, true));
+                group.records.forEach((child, index) => {
+                    rows.push(...renderItem(child, `${key}-${groupKey}-${index}`, true));
                 });
             });
         }
@@ -113,9 +114,9 @@ export default function App() {
     }
 
     const bodyRows: React.ReactNode[] = [];
-    
-    items.forEach((item, idx) => {
-        bodyRows.push(...renderItem(item, idx.toString(), false));
+
+    items.forEach((item, index) => {
+        bodyRows.push(...renderItem(item, index.toString(), false));
     });
 
     return (
