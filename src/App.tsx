@@ -13,18 +13,54 @@ interface HierarchyItem {
 }
 
 export default function App() {
-    const items = data as HierarchyItem[];
+    // load data into local state so we can delete items
+    const [items, setItems] = useState<HierarchyItem[]>(data as HierarchyItem[]);
     const [expanded, setExpanded] = useState<{ [id: string]: boolean }>({});
 
+    // toggle expand/collapse
+    function toggleItem(id: string) {
+        setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+    }
+
+    // recursively remove an item and all its children by ID
+    function removeById(id: string, list: HierarchyItem[]): HierarchyItem[] {
+        return list
+            .filter((item) => item.data.ID !== id)
+            .map((item) => ({
+                ...item,
+                children: item.children
+                    ? Object.fromEntries(
+                          Object.entries(item.children).map(([key, group]) => [
+                              key,
+                              { records: removeById(id, group.records) },
+                          ])
+                      )
+                    : undefined,
+            }));
+    }
+
+    // handler for delete button - removes data, button and it changes the expanded state
+    function handleDelete(id: string) {
+        setItems((prev) => removeById(id, prev));
+        setExpanded((prev) => ({ ...prev, [id]: false }));
+    }
+
+    // derive columns from first item
     const columns = Object.keys(items[0].data);
-    console.log(columns, "columns");
 
     // render main green header
     const globalHeader = (
         <thead>
             <tr style={{ backgroundColor: "#2ebc71", color: "#000" }}>
                 {columns.map((col) => (
-                    <th key={col} style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #333" }}>
+                    <th
+                        key={col}
+                        style={{
+                            textAlign: "left",
+                            padding: 8,
+                            borderBottom: "1px solid #333",
+                        }}
+                    >
                         {col}
                     </th>
                 ))}
@@ -33,20 +69,24 @@ export default function App() {
         </thead>
     );
 
-    function toggleItem(id: string) {
-        setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-    }
-
     function renderItem(item: HierarchyItem, key: string, showGroupHeader: boolean) {
-        const rows = [];
+        const rows: React.ReactNode[] = [];
         const cols = Object.keys(item.data);
         const hasChildren = item.children && Object.values(item.children).some((g) => g.records.length > 0);
-        // sub Header
+
+        // group header for expanded detail
         if (showGroupHeader) {
             rows.push(
                 <tr key={`sec-head-${key}`} style={{ backgroundColor: "#2ebc71", color: "#000" }}>
                     {cols.map((col) => (
-                        <th key={col} style={{ textAlign: "left", padding: 8, borderBottom: "1px solid #333" }}>
+                        <th
+                            key={col}
+                            style={{
+                                textAlign: "left",
+                                padding: 8,
+                                borderBottom: "1px solid #333",
+                            }}
+                        >
                             {col}
                         </th>
                     ))}
@@ -83,7 +123,7 @@ export default function App() {
         dataCells.push(
             <td key={`del-${key}`} style={{ padding: 8, textAlign: "center" }}>
                 <button
-                    onClick={() => alert(`Delete ${item.data.ID}`)}
+                    onClick={() => handleDelete(item.data.ID)}
                     style={{
                         background: "transparent",
                         border: "none",
@@ -114,7 +154,6 @@ export default function App() {
     }
 
     const bodyRows: React.ReactNode[] = [];
-
     items.forEach((item, index) => {
         bodyRows.push(...renderItem(item, index.toString(), false));
     });
